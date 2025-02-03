@@ -1,0 +1,117 @@
+{
+    "name": "nw_dev",
+    "objectId": "9a112c34-55fd-4b86-88f1-e7e875714800",
+    "properties": {
+        "activities": [
+            {
+                "name": "Ingest Northwind Data",
+                "type": "TridentNotebook",
+                "dependsOn": [],
+                "policy": {
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "notebookId": "1719f1b2-6d2e-470e-abcf-758baeca396c",
+                    "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                    "parameters": {
+                        "nw_api_url": {
+                            "value": {
+                                "value": "@pipeline().parameters.nw_api_url",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Get each nw table",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Ingest Northwind Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "items": {
+                        "value": "@pipeline().parameters.raw_tables",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Convert nw jsonl files to delta",
+                            "type": "TridentNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "notebookId": "df895618-49ed-4c7c-80ff-eb2dc86bcc57",
+                                "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                                "parameters": {
+                                    "table_name": {
+                                        "value": {
+                                            "value": "@item()",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "fabric_workspace": {
+                                        "value": {
+                                            "value": "@pipeline().parameters.fabric_workspace",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "nw_api_url": {
+                "type": "string",
+                "defaultValue": "https://demodata.grapecity.com/"
+            },
+            "raw_tables": {
+                "type": "array",
+                "defaultValue": [
+                    "raw__northwind__categories",
+                    "raw__northwind__category_details",
+                    "raw__northwind__customers",
+                    "raw__northwind__employees",
+                    "raw__northwind__employee_territories",
+                    "raw__northwind__order_details",
+                    "raw__northwind__orders",
+                    "raw__northwind__products",
+                    "raw__northwind__regions",
+                    "raw__northwind__shippers",
+                    "raw__northwind__suppliers",
+                    "raw__northwind__territories"
+                ]
+            },
+            "fabric_workspace": {
+                "type": "string",
+                "defaultValue": "fabric_dev"
+            }
+        },
+        "variables": {
+            "table_name": {
+                "type": "String"
+            }
+        },
+        "lastModifiedByObjectId": "3c132713-13c5-485f-8c61-e71dfc6d3ebf"
+    }
+}
