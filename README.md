@@ -7,4 +7,9 @@ This is a series exploring what's possible without Spark in Microsoft Fabric.
 
 Week 1: Setting up ingestion with MS Fabric, dltHub, and Lakehouse.
 
-https://sketchmyview.substack.com/p/setting-up-ingestion-with-ms-fabric
+Substack: https://sketchmyview.substack.com/p/setting-up-ingestion-with-ms-fabric  
+
+Medium: https://sketchmyview.medium.com/setting-up-ingestion-with-ms-fabric-dlthub-and-lakehouse-4718fe962b80  
+
+LinkedIn: https://www.linkedin.com/pulse/setting-up-ingestion-ms-fabric-dlthub-lakehouse-rakesh-gupta-5rqvc  
+
