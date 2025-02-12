@@ -1,0 +1,3 @@
+root_path,file_path,table_name,fabric_workspace,sql_catalog_path,lakehouse_name
+"/lakehouse/default/Files/","northwind/bronze/raw__northwind__orders","clean__northwind__orders","fabric_dev","northwind_metadata/sql_catalog/silver/orders.sql","dlthublh"
+"/lakehouse/default/Files/","northwind/bronze/raw__northwind__customers","clean__northwind__customers","fabric_dev","northwind_metadata/sql_catalog/silver/customer.sql","dlthublh"
