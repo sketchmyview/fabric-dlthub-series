@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: lakehouse_gold
+    database: dlthubwh
+    schema: gold
+    description: "gold data stored in the fabric warehouse gold layer."
+    tables:
+      - name: dimdate
+        description: dimdate table

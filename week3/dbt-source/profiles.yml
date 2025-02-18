@@ -1,0 +1,14 @@
+nwfabriclh:
+  target: fabric-dev
+  outputs:    
+    fabric-dev:
+      authentication: ServicePrincipal
+      tenant_id: "{{ env_var('DBT_ENV_TENANT_ID')}}"
+      client_id: "{{ env_var('DBT_ENV_CLIENT_ID')}}"
+      client_secret: "{{ env_var('DBT_ENV_SECRET_CLIENTSECRET')}}"
+      database: <fabric_wh_database>
+      driver: 'ODBC Driver 18 for SQL Server'
+      host: <fabric_wh_host_name>
+      schema: dbo
+      threads: 4
+      type: fabric

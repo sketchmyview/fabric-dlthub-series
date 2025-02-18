@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: lakehouse_raw
+    database: dlthublh
+    schema: dbo
+    description: "Raw data stored in the Lakehouse Silver layer."
+    tables:
+      - name: raw__northwind__customers
+        description: customer entity
+
+      - name: raw__northwind__orders
+        description: orders entity
+
+      - name: raw__northwind__shippers
+        description: shippers entity
