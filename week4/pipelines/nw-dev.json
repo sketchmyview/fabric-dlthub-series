@@ -1,0 +1,508 @@
+{
+    "name": "nw_dev",
+    "objectId": "9a112c34-55fd-4b86-88f1-e7e875714800",
+    "properties": {
+        "activities": [
+            {
+                "name": "Ingest Northwind Data",
+                "type": "TridentNotebook",
+                "state": "Inactive",
+                "onInactiveMarkAs": "Succeeded",
+                "dependsOn": [],
+                "policy": {
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "notebookId": "1719f1b2-6d2e-470e-abcf-758baeca396c",
+                    "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                    "parameters": {
+                        "nw_api_url": {
+                            "value": {
+                                "value": "@pipeline().parameters.nw_api_url",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Get each nw table",
+                "type": "ForEach",
+                "state": "Inactive",
+                "onInactiveMarkAs": "Succeeded",
+                "dependsOn": [
+                    {
+                        "activity": "Ingest Northwind Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "items": {
+                        "value": "@pipeline().parameters.raw_tables",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Convert nw jsonl files to delta",
+                            "type": "TridentNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "notebookId": "df895618-49ed-4c7c-80ff-eb2dc86bcc57",
+                                "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                                "parameters": {
+                                    "table_name": {
+                                        "value": {
+                                            "value": "@item()",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "fabric_workspace": {
+                                        "value": {
+                                            "value": "@pipeline().parameters.fabric_workspace",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Lookup silver metadata",
+                "type": "Lookup",
+                "state": "Inactive",
+                "onInactiveMarkAs": "Succeeded",
+                "dependsOn": [
+                    {
+                        "activity": "Get each nw table",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "source": {
+                        "type": "DelimitedTextSource",
+                        "storeSettings": {
+                            "type": "LakehouseReadSettings",
+                            "recursive": true,
+                            "enablePartitionDiscovery": false
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextReadSettings"
+                        }
+                    },
+                    "firstRowOnly": false,
+                    "datasetSettings": {
+                        "annotations": [],
+                        "linkedService": {
+                            "name": "dlthublh",
+                            "properties": {
+                                "annotations": [],
+                                "type": "Lakehouse",
+                                "typeProperties": {
+                                    "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                                    "artifactId": "a23858b2-7a2b-47f5-b506-6f0ddca2f788",
+                                    "rootFolder": "Files"
+                                }
+                            }
+                        },
+                        "type": "DelimitedText",
+                        "typeProperties": {
+                            "location": {
+                                "type": "LakehouseLocation",
+                                "fileName": "silver_transform_metadata.csv",
+                                "folderPath": "northwind_metadata/metadata/silver"
+                            },
+                            "columnDelimiter": ",",
+                            "escapeChar": "\\",
+                            "firstRowAsHeader": true,
+                            "quoteChar": "\""
+                        },
+                        "schema": []
+                    }
+                }
+            },
+            {
+                "name": "Iterate through metadata array",
+                "type": "ForEach",
+                "state": "Inactive",
+                "onInactiveMarkAs": "Succeeded",
+                "dependsOn": [
+                    {
+                        "activity": "Lookup silver metadata",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Lookup silver metadata').output.value",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Transformation nw silver",
+                            "type": "TridentNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "notebookId": "92db89fa-44ed-4475-a4bc-41bdd25fc844",
+                                "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                                "parameters": {
+                                    "root_path": {
+                                        "value": {
+                                            "value": "@item().root_path",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "file_path": {
+                                        "value": {
+                                            "value": "@item().file_path",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "table_name": {
+                                        "value": {
+                                            "value": "@item().table_name",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "fabric_workspace": {
+                                        "value": {
+                                            "value": "@item().fabric_workspace",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "sql_catalog_path": {
+                                        "value": {
+                                            "value": "@item().sql_catalog_path",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "lakehouse_name": {
+                                        "value": {
+                                            "value": "@item().lakehouse_name",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "silver and gold layer using dbt",
+                "type": "TridentNotebook",
+                "state": "Inactive",
+                "onInactiveMarkAs": "Succeeded",
+                "dependsOn": [
+                    {
+                        "activity": "Get each nw table",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "notebookId": "38ffb447-1754-4b91-b5d7-21984e947ec1",
+                    "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                    "parameters": {
+                        "key_vault_name": {
+                            "value": {
+                                "value": "@pipeline().parameters.key_vault_name",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "dbt_project_dir_path": {
+                            "value": {
+                                "value": "@pipeline().parameters.dbt_project_dir_path",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "dbt_profile_dir_path": {
+                            "value": {
+                                "value": "@pipeline().parameters.dbt_profile_dir_path",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Copy to Onelake",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "Set Order csv File Name",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "source": {
+                        "type": "DataWarehouseSource",
+                        "sqlReaderStoredProcedureName": {
+                            "value": "@pipeline().parameters.nw_proc_name",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None",
+                        "datasetSettings": {
+                            "annotations": [],
+                            "linkedService": {
+                                "name": "dlthubwh",
+                                "properties": {
+                                    "annotations": [],
+                                    "type": "DataWarehouse",
+                                    "typeProperties": {
+                                        "endpoint": "r4jx7vpe7jdevdnkp63l77xa5m-6nvbp2ffj5uerlkin7bukwcsgm.datawarehouse.fabric.microsoft.com",
+                                        "artifactId": "21195e0b-d93e-4b67-92c4-a142c38ddbdc",
+                                        "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233"
+                                    }
+                                }
+                            },
+                            "type": "DataWarehouseTable",
+                            "schema": []
+                        }
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "LakehouseWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "quoteAllText": true,
+                            "fileExtension": ".txt"
+                        },
+                        "datasetSettings": {
+                            "annotations": [],
+                            "linkedService": {
+                                "name": "dlthublh",
+                                "properties": {
+                                    "annotations": [],
+                                    "type": "Lakehouse",
+                                    "typeProperties": {
+                                        "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                                        "artifactId": "a23858b2-7a2b-47f5-b506-6f0ddca2f788",
+                                        "rootFolder": "Files"
+                                    }
+                                }
+                            },
+                            "type": "DelimitedText",
+                            "typeProperties": {
+                                "location": {
+                                    "type": "LakehouseLocation",
+                                    "fileName": {
+                                        "value": "@variables('nworder_file_name')",
+                                        "type": "Expression"
+                                    },
+                                    "folderPath": {
+                                        "value": "@pipeline().parameters.nworder_onelake_folder",
+                                        "type": "Expression"
+                                    }
+                                },
+                                "columnDelimiter": ",",
+                                "escapeChar": "\\",
+                                "firstRowAsHeader": true,
+                                "quoteChar": "\""
+                            },
+                            "schema": []
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Transfer to AWS S3",
+                "type": "TridentNotebook",
+                "dependsOn": [
+                    {
+                        "activity": "Copy to Onelake",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "notebookId": "c997a52d-19d3-4fdb-84d5-ec1ce6e19654",
+                    "workspaceId": "e8176af3-4fa5-4868-ad48-6fc345585233",
+                    "parameters": {
+                        "folder_name": {
+                            "value": {
+                                "value": "@pipeline().parameters.nworder_onelake_folder",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "file_name": {
+                            "value": {
+                                "value": "@variables('nworder_file_name')",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "key_vault_name": {
+                            "value": {
+                                "value": "@pipeline().parameters.key_vault_name",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Set Order csv File Name",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Iterate through metadata array",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "variableName": "nworder_file_name",
+                    "value": {
+                        "value": "@concat('nworders_',formatDateTime(utcNow(), 'yyyyMMddhhmmss'),'.csv')",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "nw_api_url": {
+                "type": "string",
+                "defaultValue": "https://demodata.grapecity.com/"
+            },
+            "raw_tables": {
+                "type": "array",
+                "defaultValue": [
+                    "raw__northwind__categories",
+                    "raw__northwind__category_details",
+                    "raw__northwind__customers",
+                    "raw__northwind__employees",
+                    "raw__northwind__employee_territories",
+                    "raw__northwind__order_details",
+                    "raw__northwind__orders",
+                    "raw__northwind__products",
+                    "raw__northwind__regions",
+                    "raw__northwind__shippers",
+                    "raw__northwind__suppliers",
+                    "raw__northwind__territories"
+                ]
+            },
+            "fabric_workspace": {
+                "type": "string",
+                "defaultValue": "fabric_dev"
+            },
+            "key_vault_name": {
+                "type": "string",
+                "defaultValue": "dlthubkv"
+            },
+            "dbt_project_dir_path": {
+                "type": "string",
+                "defaultValue": "/lakehouse/default/Files/nwfabriclh"
+            },
+            "dbt_profile_dir_path": {
+                "type": "string",
+                "defaultValue": "/lakehouse/default/Files/nwfabriclh"
+            },
+            "nw_proc_name": {
+                "type": "string",
+                "defaultValue": "[gold].[get_nw_orders]"
+            },
+            "nworder_onelake_folder": {
+                "type": "string",
+                "defaultValue": "nw_orders"
+            }
+        },
+        "variables": {
+            "table_name": {
+                "type": "String"
+            },
+            "nworder_file_name": {
+                "type": "String"
+            }
+        },
+        "lastModifiedByObjectId": "3c132713-13c5-485f-8c61-e71dfc6d3ebf",
+        "lastPublishTime": "2025-03-06T00:19:04Z"
+    }
+}
